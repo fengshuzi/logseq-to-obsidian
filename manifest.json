@@ -3,7 +3,7 @@
   "name": "Logseq to Obsidian Converter",
   "version": "0.1.0",
   "minAppVersion": "0.12.0",
-  "description": "Automatically converts Logseq syntax to Obsidian syntax when opening MD files, based on provided Python script rules.",
+  "description": "Automatically converts Logseq syntax to Obsidian syntax when opening MD files",
   "author": "lizhifeng",
   "isDesktopOnly": false
 }
