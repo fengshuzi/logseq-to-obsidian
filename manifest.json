@@ -1,9 +1,9 @@
 {
-  "id": "logseq-to-obsidian",
-  "name": "Logseq to Obsidian Converter",
+  "id": "logseq-converter",
+  "name": "Logseq Syntax Converter",
   "version": "0.1.0",
   "minAppVersion": "0.12.0",
-  "description": "Automatically converts Logseq syntax to Obsidian syntax when opening MD files",
+  "description": "Automatically converts Logseq syntax to standard Markdown syntax when opening MD files",
   "author": "lizhifeng",
   "isDesktopOnly": false
 }

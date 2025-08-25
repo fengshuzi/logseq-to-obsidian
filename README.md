@@ -1,35 +1,35 @@
-# Logseq to Obsidian Converter
+# Logseq Syntax Converter
 
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/fengshuzi/logseq-to-obsidian)](https://github.com/fengshuzi/logseq-to-obsidian/releases)
 [![GitHub license](https://img.shields.io/github/license/fengshuzi/logseq-to-obsidian)](https://github.com/fengshuzi/logseq-to-obsidian/blob/main/LICENSE)
 
-An Obsidian plugin that automatically converts Logseq syntax to Obsidian syntax, helping users seamlessly migrate from Logseq to Obsidian.
+A plugin that automatically converts Logseq syntax to standard Markdown syntax, helping users seamlessly migrate from Logseq to other Markdown editors.
 
 ## ✨ Features
 
 - **Automatic Syntax Conversion**: Automatically detects and converts Logseq syntax when opening Markdown files
-- **Task Mark Conversion**: Converts Logseq's `TODO`, `DOING`, `DONE` to Obsidian checkbox format
+- **Task Mark Conversion**: Converts Logseq's `TODO`, `DOING`, `DONE` to standard checkbox format
 - **Time Tracking Integration**: Automatically calculates and integrates time records from LOGBOOK, appending total time to completed tasks
 - **Smart Duration Formatting**: Automatically formats time into readable format (seconds, minutes, hours)
 - **Seamless Experience**: Fully automated conversion process, no manual operation required
 
 ## 🔧 Installation
 
-### From Obsidian Community Plugins (Recommended)
+### From Community Plugins (Recommended)
 
-1. Open Obsidian Settings
+1. Open your Markdown editor settings
 2. Go to "Community plugins" tab
 3. Turn off "Safe mode"
 4. Click "Browse" button
-5. Search for "Logseq to Obsidian Converter"
+5. Search for "Logseq Syntax Converter"
 6. Click "Install" button
 7. Enable the plugin after installation
 
 ### Manual Installation
 
 1. Download the latest version of `main.js` and `manifest.json`
-2. Place the files in your Obsidian vault's `.obsidian/plugins/logseq-to-obsidian/` folder
-3. Restart Obsidian
+2. Place the files in your editor's plugins folder
+3. Restart your editor
 4. Enable the plugin in settings
 
 ## 📖 Usage
@@ -53,7 +53,7 @@ After installing and enabling the plugin, no configuration is required:
 - DONE Project planning
 ```
 
-**After (Obsidian syntax):**
+**After (Standard Markdown):**
 ```markdown
 - [ ] Complete project documentation
 - [ ] Write code
@@ -71,7 +71,7 @@ CLOCK: [2024-01-01 Mon 14:00:00]--[2024-01-01 Mon 15:00:00] => 01:00:00
 :END:
 ```
 
-**After (Obsidian syntax):**
+**After (Standard Markdown):**
 ```markdown
 - [x] Complete meeting 2 hours 30 minutes
 ```
@@ -108,7 +108,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-Thanks to the Obsidian team for providing excellent plugin APIs, and to the Logseq community for their contributions to knowledge management.
+Thanks to the Logseq community for their contributions to knowledge management.
 
 ---
 
