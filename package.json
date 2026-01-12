@@ -1,0 +1,17 @@
+{
+  "name": "logseq-to-obsidian",
+  "version": "0.2.2",
+  "description": "Automatically converts Logseq syntax to Obsidian syntax when opening MD files",
+  "main": "main.js",
+  "scripts": {
+    "deploy": "node deploy.mjs"
+  },
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "logseq",
+    "converter"
+  ],
+  "author": "lizhifeng",
+  "license": "MIT"
+}
