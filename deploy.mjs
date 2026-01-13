@@ -41,8 +41,11 @@ const VAULTS = [
   }
 ];
 
-// 需要复制的文件
-const FILES_TO_COPY = ['main.js', 'manifest.json'];
+// 需要复制的文件（源文件 -> 目标文件名）
+const FILES_TO_COPY = [
+  { source: 'dist/main.js', target: 'main.js' },
+  { source: 'manifest.json', target: 'manifest.json' }
+];
 
 console.log('📦 开始部署 Logseq to Obsidian 插件到所有 vaults...\n');
 
@@ -59,14 +62,14 @@ VAULTS.forEach(vault => {
   // 复制文件
   FILES_TO_COPY.forEach(file => {
     try {
-      if (existsSync(file)) {
-        copyFileSync(file, join(vault.path, file));
-        console.log(`  ✓ 已复制 ${file}`);
+      if (existsSync(file.source)) {
+        copyFileSync(file.source, join(vault.path, file.target));
+        console.log(`  ✓ 已复制 ${file.source} → ${file.target}`);
       } else {
-        console.log(`  ⚠️  警告: ${file} 不存在`);
+        console.log(`  ⚠️  警告: ${file.source} 不存在`);
       }
     } catch (error) {
-      console.error(`  ❌ 复制 ${file} 失败:`, error.message);
+      console.error(`  ❌ 复制 ${file.source} 失败:`, error.message);
     }
   });
   

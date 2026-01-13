@@ -4,7 +4,8 @@
   "description": "Automatically converts Logseq syntax to Obsidian syntax when opening MD files",
   "main": "main.js",
   "scripts": {
-    "deploy": "node deploy.mjs",
+    "build": "node build.mjs",
+    "deploy": "npm run build && node deploy.mjs",
     "release": "node release.mjs"
   },
   "keywords": [
