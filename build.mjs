@@ -17,4 +17,10 @@ if (existsSync('main.js')) {
   process.exit(1);
 }
 
+// 复制 manifest.json 到 dist
+if (existsSync('manifest.json')) {
+  copyFileSync('manifest.json', 'dist/manifest.json');
+  console.log('✅ 已复制 manifest.json → dist/manifest.json');
+}
+
 console.log('✅ 构建完成');
