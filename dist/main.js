@@ -388,5 +388,11 @@ var LogseqToObsidianSettingTab = class extends import_obsidian.PluginSettingTab 
       this.plugin.settings.convertTodoToCheckbox = value;
       await this.plugin.saveSettings();
     }));
+    const donateSection = containerEl.createDiv({ cls: "plugin-donate-section" });
+    donateSection.createEl("h3", { text: "\u2615 \u8BF7\u4F5C\u8005\u559D\u676F\u5496\u5561" });
+    donateSection.createEl("p", { text: "\u5982\u679C\u8FD9\u4E2A\u63D2\u4EF6\u5E2E\u52A9\u4E86\u4F60\uFF0C\u6B22\u8FCE\u626B\u7801\u6253\u8D4F\uFF0C\u611F\u8C22\u652F\u6301\uFF01", cls: "plugin-donate-desc" });
+    const imgWrap = donateSection.createDiv({ cls: "plugin-donate-qr" });
+    imgWrap.createEl("img", { attr: { src: this.plugin.app.vault.adapter.getResourcePath(`${this.plugin.manifest.dir}/assets/wechat-donate.jpg`), alt: "\u5FAE\u4FE1\u6253\u8D4F", width: "160" } });
+    imgWrap.createEl("p", { text: "\u5FAE\u4FE1\u626B\u7801\u6253\u8D4F", cls: "plugin-donate-label" });
   }
 };
