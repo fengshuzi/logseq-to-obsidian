@@ -1,7 +1,7 @@
 import esbuild from "esbuild";
 import process from "process";
 import builtins from "builtin-modules";
-import { copyFileSync, existsSync } from 'fs';
+import { copyFileSync, existsSync, mkdirSync } from 'fs';
 
 const banner =
 `/*
@@ -48,6 +48,18 @@ if (prod) {
 	if (existsSync('manifest.json')) {
 		copyFileSync('manifest.json', 'dist/manifest.json');
 		console.log('✅ 已复制 manifest.json → dist/manifest.json');
+	}
+
+	// Copy assets
+	if (existsSync('assets')) {
+		if (!existsSync('dist/assets')) mkdirSync('dist/assets', { recursive: true });
+		['wechat-donate.jpg'].forEach(f => {
+			const src = `assets/${f}`;
+			if (existsSync(src)) {
+				copyFileSync(src, `dist/assets/${f}`);
+				console.log(`✅ 已复制 ${src} → dist/assets/${f}`);
+			}
+		});
 	}
 	
 	process.exit(0);
