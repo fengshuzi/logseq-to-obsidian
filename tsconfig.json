@@ -6,7 +6,6 @@
     "module": "ESNext",
     "target": "ES6",
     "allowJs": true,
-    "noImplicitAny": false,
     "moduleResolution": "node",
     "importHelpers": true,
     "isolatedModules": true,
@@ -16,7 +15,9 @@
       "ES5",
       "ES6",
       "ES7"
-    ]
+    ],
+    "strict": true,
+    "skipLibCheck": true
   },
   "include": [
     "**/*.ts"
