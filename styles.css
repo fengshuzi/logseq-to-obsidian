@@ -1,5 +1,18 @@
 
 
+.logseq-block-ref {
+    display: inline;
+}
+
+.logseq-block-ref-icon {
+    opacity: 0.5;
+    font-size: 0.9em;
+}
+
+.logseq-block-ref-missing {
+    color: var(--text-error);
+}
+
 /* 设置页打赏区 */
 .plugin-donate-section {
     margin-top: 48px;

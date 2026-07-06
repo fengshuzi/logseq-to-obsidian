@@ -1,35 +1,34 @@
 # Logseq Formater
 
-自动将 Logseq 语法转换为 Markdown 的插件。
+An Obsidian plugin that automatically converts Logseq syntax to Markdown.
 
-## 功能特点
+## Features
 
-- 🔄 **自动转换**：打开 MD 文件时自动转换 Logseq 语法
-- 📝 **块引用渲染**：将 Logseq 的 `((block-id))` 渲染为内联块内容预览
-- 🆔 **块 ID 转换**：将 Logseq 的 `id:: block-id` 转换为 Obsidian 的 `^block-id`
-- ⏱️ **LOGBOOK 汇总**：把 `:LOGBOOK:` 下的 `CLOCK` 时长汇总追加到 `DONE` 任务后
-- ✅ **TODO 渲染**：支持保留原样 / 渲染为任务 / 转换为 Markdown 复选框三种模式
-- ⚡ **无缝集成**：后台自动运行，无需手动操作
+- 🔄 **Auto-convert**: Automatically converts Logseq syntax when opening MD files.
+- 📝 **Block reference rendering**: Renders Logseq `((block-id))` as inline block content previews.
+- 🆔 **Block ID conversion**: Converts Logseq `id:: block-id` to Obsidian `^block-id`.
+- ⏱️ **LOGBOOK summary**: Summarizes `CLOCK` durations under `:LOGBOOK:` and appends them to `DONE` tasks.
+- ✅ **TODO rendering**: Supports three modes: preserve, render as task, or convert to Markdown checkbox.
+- ⚡ **Seamless integration**: Runs automatically in the background without manual action.
 
-## 安装方法
+## Installation
 
-### 方式一：Obsidian 社区市场安装（推荐）
+### Method 1: Obsidian Community Marketplace (Recommended)
 
-打开 Obsidian 设置 → 第三方插件 → 浏览，搜索 **Logseq Formater** 或 **fengshuzi** 即可安装。
+Open Obsidian Settings → Community Plugins → Browse, then search for **Logseq Formater** or **fengshuzi**.
 
+### Method 2: Install from GitHub Release
 
-### 方式二：从 GitHub Release 安装（推荐）
-
-1. 前往 [Releases](../../releases) 页面下载最新版本
-2. 下载以下文件：
+1. Go to the [Releases](../../releases) page and download the latest version.
+2. Download the following files:
    - `main.js`
    - `manifest.json`
-3. 在你的 Obsidian 库中创建插件目录：`.obsidian/plugins/logseq-formater/`
-4. 将下载的文件复制到该目录
-5. 重启 Obsidian 或刷新插件列表
-6. 在设置中启用"Logseq Formater"插件
+3. Create the plugin directory in your vault: `.obsidian/plugins/logseq-formater/`
+4. Copy the downloaded files into that directory.
+5. Restart Obsidian or reload the plugin list.
+6. Enable the **Logseq Formater** plugin in Settings.
 
-### 方式三：手动安装
+### Method 3: Manual Installation
 
 ```bash
 cd /path/to/your/vault/.obsidian/plugins
@@ -39,25 +38,25 @@ npm install
 npm run build
 ```
 
-## 使用方法
+## Usage
 
-启用插件后，打开任何包含 Logseq 语法的 MD 文件，插件会自动进行转换。
+After enabling the plugin, open any MD file containing Logseq syntax and the plugin will convert it automatically.
 
-### TODO 渲染方式
+### TODO Rendering Mode
 
-在插件设置中可选择 Logseq 的 `TODO` / `DOING` / `DONE` 如何显示：
+In the plugin settings you can choose how Logseq `TODO` / `DOING` / `DONE` should be displayed:
 
-- **保留原样**：显示为原始的 `TODO` / `DOING` / `DONE` 文本。
-- **渲染为任务（推荐）**：在阅读视图中显示为带状态标签的任务复选框，不会修改你的笔记原文。
-- **转换为标准 Markdown 复选框**：打开文件时将 `TODO` / `DOING` 转为 `- [ ]`，`DONE` 转为 `- [x]`，会修改笔记原文。
+- **Preserve**: Keep the original `TODO` / `DOING` / `DONE` text.
+- **Render as task (Recommended)**: Display as a task checkbox with a status label in reading view without modifying your note source.
+- **Convert to Markdown checkbox**: Convert `TODO` / `DOING` to `- [ ]` and `DONE` to `- [x]` when opening the file. This modifies your note source.
 
-## 开发
+## Development
 
 ```bash
-# 部署到本地vault
+# Deploy to local vault
 npm run deploy
 
-# 发布到GitHub
+# Publish to GitHub
 npm run release
 ```
 
@@ -65,14 +64,13 @@ npm run release
 
 MIT
 
-
 ---
 
-## ☕ 请作者喝杯咖啡
+## ☕ Buy me a coffee
 
-如果这个插件帮助了你，欢迎扫码打赏，感谢支持！
+If this plugin helped you, feel free to buy me a coffee.
 
 <div align="center">
-  <img src="https://raw.githubusercontent.com/fengshuzi/images/main/wechat-donate.jpg" alt="微信打赏" width="200" />
-  <p><sub>微信扫码打赏</sub></p>
+  <img src="https://raw.githubusercontent.com/fengshuzi/images/main/wechat-donate.jpg" alt="WeChat Donate" width="200" />
+  <p><sub>Scan with WeChat</sub></p>
 </div>

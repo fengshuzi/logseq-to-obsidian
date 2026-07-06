@@ -1,6 +1,8 @@
 import { Plugin, PluginSettingTab, Setting, MarkdownRenderer, TFile, App, TFolder, MarkdownPostProcessorContext } from 'obsidian';
 import { EditorView, Decoration, ViewPlugin, WidgetType, DecorationSet, ViewUpdate, Range } from '@codemirror/view';
 
+declare const activeDocument: Document;
+
 type TodoRenderMode = 'preserve' | 'render-as-task' | 'convert-to-checkbox';
 
 interface LogseqFormaterSettings {
@@ -56,9 +58,8 @@ class BlockRefWidget extends WidgetType {
   }
 
   toDOM(): HTMLElement {
-    const span = document.createElement('span');
+    const span = activeDocument.createElement('span');
     span.className = 'logseq-block-ref';
-    span.style.cssText = 'display: inline;';
     this.plugin.populateBlockRef(span, this.blockId, '');
     return span;
   }
@@ -239,29 +240,29 @@ export default class LogseqFormater extends Plugin {
   }
 
   populateBlockRef(container: HTMLElement, blockId: string, sourcePath: string): void {
-    const refIcon = document.createElement('span');
+    const refIcon = activeDocument.createElement('span');
     refIcon.textContent = '↗ ';
-    refIcon.style.cssText = 'opacity: 0.5; font-size: 0.9em;';
+    refIcon.className = 'logseq-block-ref-icon';
 
-    const contentSpan = document.createElement('span');
+    const contentSpan = activeDocument.createElement('span');
     contentSpan.textContent = '加载中...';
 
     void this.findBlockContent(blockId).then(async (result) => {
       if (result) {
         contentSpan.empty();
-        await MarkdownRenderer.renderMarkdown(result.content, contentSpan, sourcePath, this);
+        await MarkdownRenderer.render(result.content, contentSpan, sourcePath, this);
         container.title = `块引用: ${blockId}`;
         console.debug(`[LogseqFormater] rendered block content: ${result.content} (file: ${result.file.basename})`);
       } else {
         contentSpan.textContent = `(({blockId}))`;
-        contentSpan.style.color = 'var(--text-error)';
+        contentSpan.className = 'logseq-block-ref-missing';
         container.title = '未找到块内容';
         console.debug(`[LogseqFormater] block content not found: ${blockId}`);
       }
     }).catch((err: unknown) => {
       console.error(`[LogseqFormater] failed to load block content: ${err}`);
       contentSpan.textContent = `(({blockId}))`;
-      contentSpan.style.color = 'var(--text-error)';
+      contentSpan.className = 'logseq-block-ref-missing';
     });
   }
 
@@ -290,12 +291,11 @@ export default class LogseqFormater extends Plugin {
           console.debug(`[LogseqFormater] processing block ID: ${blockId}`);
 
           if (match.index > lastIndex) {
-            fragments.push(document.createTextNode(text.substring(lastIndex, match.index)));
+            fragments.push(activeDocument.createTextNode(text.substring(lastIndex, match.index)));
           }
 
-          const blockRefEl = document.createElement('span');
+          const blockRefEl = activeDocument.createElement('span');
           blockRefEl.className = 'logseq-block-ref';
-          blockRefEl.style.cssText = 'display: inline;';
           this.populateBlockRef(blockRefEl, blockId, sourcePath);
 
           fragments.push(blockRefEl);
@@ -303,7 +303,7 @@ export default class LogseqFormater extends Plugin {
         }
 
         if (lastIndex < text.length) {
-          fragments.push(document.createTextNode(text.substring(lastIndex)));
+          fragments.push(activeDocument.createTextNode(text.substring(lastIndex)));
         }
 
         if (fragments.length > 0) {
@@ -451,7 +451,7 @@ export default class LogseqFormater extends Plugin {
           if (remaining !== childText) {
             prefixRemoved = true;
             if (remaining) {
-              contentSpan.appendChild(document.createTextNode(remaining));
+              contentSpan.appendChild(activeDocument.createTextNode(remaining));
             }
             return;
           }
@@ -487,9 +487,12 @@ class LogseqFormaterSettingTab extends PluginSettingTab {
           await this.plugin.saveSettings();
         }));
 
+    new Setting(containerEl)
+      .setName('☕ Buy me a coffee')
+      .setHeading();
+
     const donateSection = containerEl.createDiv({ cls: 'plugin-donate-section' });
-    donateSection.createEl('h3', { text: '☕ 请作者喝杯咖啡' });
-    donateSection.createEl('p', { text: '如果这个插件帮助了你，欢迎请作者喝杯咖啡 ☕', cls: 'plugin-donate-desc' });
+    donateSection.createEl('p', { text: 'If this plugin helped you, consider buying me a coffee ☕', cls: 'plugin-donate-desc' });
     const imgWrap = donateSection.createDiv({ cls: 'plugin-donate-qr' });
     imgWrap.createEl('img', { attr: { src: 'https://raw.githubusercontent.com/fengshuzi/images/main/wechat-donate.jpg', alt: '微信打赏', width: '160' } });
     imgWrap.createEl('p', { text: '微信扫码', cls: 'plugin-donate-label' });

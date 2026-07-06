@@ -71,9 +71,8 @@ var BlockRefWidget = class extends import_view.WidgetType {
     this.blockId = blockId;
   }
   toDOM() {
-    const span = document.createElement("span");
+    const span = activeDocument.createElement("span");
     span.className = "logseq-block-ref";
-    span.style.cssText = "display: inline;";
     this.plugin.populateBlockRef(span, this.blockId, "");
     return span;
   }
@@ -222,27 +221,27 @@ var LogseqFormater = class extends import_obsidian.Plugin {
     return null;
   }
   populateBlockRef(container, blockId, sourcePath) {
-    const refIcon = document.createElement("span");
+    const refIcon = activeDocument.createElement("span");
     refIcon.textContent = "\u2197 ";
-    refIcon.style.cssText = "opacity: 0.5; font-size: 0.9em;";
-    const contentSpan = document.createElement("span");
+    refIcon.className = "logseq-block-ref-icon";
+    const contentSpan = activeDocument.createElement("span");
     contentSpan.textContent = "\u52A0\u8F7D\u4E2D...";
     void this.findBlockContent(blockId).then(async (result) => {
       if (result) {
         contentSpan.empty();
-        await import_obsidian.MarkdownRenderer.renderMarkdown(result.content, contentSpan, sourcePath, this);
+        await import_obsidian.MarkdownRenderer.render(result.content, contentSpan, sourcePath, this);
         container.title = `\u5757\u5F15\u7528: ${blockId}`;
         console.debug(`[LogseqFormater] rendered block content: ${result.content} (file: ${result.file.basename})`);
       } else {
         contentSpan.textContent = `(({blockId}))`;
-        contentSpan.style.color = "var(--text-error)";
+        contentSpan.className = "logseq-block-ref-missing";
         container.title = "\u672A\u627E\u5230\u5757\u5185\u5BB9";
         console.debug(`[LogseqFormater] block content not found: ${blockId}`);
       }
     }).catch((err) => {
       console.error(`[LogseqFormater] failed to load block content: ${err}`);
       contentSpan.textContent = `(({blockId}))`;
-      contentSpan.style.color = "var(--text-error)";
+      contentSpan.className = "logseq-block-ref-missing";
     });
   }
   renderBlockReferences(element, context) {
@@ -265,17 +264,16 @@ var LogseqFormater = class extends import_obsidian.Plugin {
           const blockId = match[1];
           console.debug(`[LogseqFormater] processing block ID: ${blockId}`);
           if (match.index > lastIndex) {
-            fragments.push(document.createTextNode(text.substring(lastIndex, match.index)));
+            fragments.push(activeDocument.createTextNode(text.substring(lastIndex, match.index)));
           }
-          const blockRefEl = document.createElement("span");
+          const blockRefEl = activeDocument.createElement("span");
           blockRefEl.className = "logseq-block-ref";
-          blockRefEl.style.cssText = "display: inline;";
           this.populateBlockRef(blockRefEl, blockId, sourcePath);
           fragments.push(blockRefEl);
           lastIndex = pattern.lastIndex;
         }
         if (lastIndex < text.length) {
-          fragments.push(document.createTextNode(text.substring(lastIndex)));
+          fragments.push(activeDocument.createTextNode(text.substring(lastIndex)));
         }
         if (fragments.length > 0) {
           const parent = node.parentNode;
@@ -402,7 +400,7 @@ var LogseqFormater = class extends import_obsidian.Plugin {
           if (remaining !== childText) {
             prefixRemoved = true;
             if (remaining) {
-              contentSpan.appendChild(document.createTextNode(remaining));
+              contentSpan.appendChild(activeDocument.createTextNode(remaining));
             }
             return;
           }
@@ -424,9 +422,9 @@ var LogseqFormaterSettingTab = class extends import_obsidian.PluginSettingTab {
       this.plugin.settings.todoRenderMode = value;
       await this.plugin.saveSettings();
     }));
+    new import_obsidian.Setting(containerEl).setName("\u2615 Buy me a coffee").setHeading();
     const donateSection = containerEl.createDiv({ cls: "plugin-donate-section" });
-    donateSection.createEl("h3", { text: "\u2615 \u8BF7\u4F5C\u8005\u559D\u676F\u5496\u5561" });
-    donateSection.createEl("p", { text: "\u5982\u679C\u8FD9\u4E2A\u63D2\u4EF6\u5E2E\u52A9\u4E86\u4F60\uFF0C\u6B22\u8FCE\u8BF7\u4F5C\u8005\u559D\u676F\u5496\u5561 \u2615", cls: "plugin-donate-desc" });
+    donateSection.createEl("p", { text: "If this plugin helped you, consider buying me a coffee \u2615", cls: "plugin-donate-desc" });
     const imgWrap = donateSection.createDiv({ cls: "plugin-donate-qr" });
     imgWrap.createEl("img", { attr: { src: "https://raw.githubusercontent.com/fengshuzi/images/main/wechat-donate.jpg", alt: "\u5FAE\u4FE1\u6253\u8D4F", width: "160" } });
     imgWrap.createEl("p", { text: "\u5FAE\u4FE1\u626B\u7801", cls: "plugin-donate-label" });
