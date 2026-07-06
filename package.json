@@ -1,6 +1,6 @@
 {
   "name": "logseq-formater",
-  "version": "0.2.2",
+  "version": "1.0.0",
   "description": "Automatically converts Logseq syntax to Markdown when opening MD files.",
   "main": "main.js",
   "scripts": {

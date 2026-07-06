@@ -79,7 +79,7 @@ export default class LogseqFormater extends Plugin {
   private readonly BLOCK_CACHE_TTL_MS = 3000;
 
   async onload() {
-    console.debug('LogseqFormater plugin loaded - version 0.2.2');
+    console.debug('LogseqFormater plugin loaded - version 1.0.0');
 
     await this.loadSettings();
 
