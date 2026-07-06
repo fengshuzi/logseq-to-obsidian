@@ -90,7 +90,7 @@ var LogseqFormater = class extends import_obsidian.Plugin {
     this.BLOCK_CACHE_TTL_MS = 3e3;
   }
   async onload() {
-    console.debug("LogseqFormater plugin loaded - version 1.0.0");
+    console.debug("LogseqFormater plugin loaded - version 1.0.1");
     await this.loadSettings();
     this.addSettingTab(new LogseqFormaterSettingTab(this.app, this));
     this.registerEvent(
