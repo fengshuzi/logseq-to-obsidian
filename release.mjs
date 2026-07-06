@@ -15,7 +15,7 @@ console.log(`🚀 准备发布版本: ${tag}${forceMode ? ' (强制模式)' : ''
 try {
   // 1. 构建
   console.log('📦 开始构建...');
-  execSync('npm run build', { stdio: 'inherit' });
+  execSync('npm run build', { stdio: 'inherit', cwd: process.cwd() });
   console.log('✅ 构建完成\n');
 
   // 2. 检查 gh cli 是否安装
@@ -44,9 +44,9 @@ try {
 
   // 4. 检测其他文件
   const files = [mainJsPath, 'manifest.json'];
-  if (existsSync('styles.css')) files.push('styles.css');
+  if (existsSync('dist/styles.css')) files.push('dist/styles.css');
   if (existsSync('config.json')) files.push('config.json');
-  
+
   console.log(`📦 将上传文件: ${files.join(', ')}\n`);
 
   // 5. 创建 git tag
@@ -60,7 +60,7 @@ try {
       console.log('⚠️  Tag 已存在，自动启用强制模式...\n');
       forceMode = true;
     }
-    
+
     // 强制模式：删除本地和远程的旧tag
     console.log('🔄 删除旧 tag...');
     try {
@@ -81,7 +81,7 @@ try {
     } catch (e) {
       // release不存在，忽略
     }
-    
+
     // 重新创建 tag
     try {
       execSync(`git tag ${tag}`, { stdio: 'pipe' });
@@ -99,10 +99,10 @@ try {
 
   // 7. 创建 GitHub Release
   console.log('🎉 创建 GitHub Release...');
-  const filesArg = files.join(' ');
+  const filesArg = files.map(f => `"${f}"`).join(' ');
   execSync(
-    `gh release create ${tag} ${filesArg} --title "${tag}" --notes "Release ${version}"`,
-    { stdio: 'inherit' }
+    `gh release create "${tag}" ${filesArg} --title "${tag}" --notes "Release ${version}"`,
+    { stdio: 'inherit', cwd: process.cwd() }
   );
   console.log('\n✅ Release 创建成功！\n');
 

@@ -50,6 +50,12 @@ if (prod) {
 		console.log('✅ 已复制 manifest.json → dist/manifest.json');
 	}
 
+	// 复制 styles.css 到 dist
+	if (existsSync('styles.css')) {
+		copyFileSync('styles.css', 'dist/styles.css');
+		console.log('✅ 已复制 styles.css → dist/styles.css');
+	}
+
 	process.exit(0);
 } else {
 	await context.watch();

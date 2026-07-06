@@ -1,0 +1,85 @@
+
+
+/* 设置页打赏区 */
+.plugin-donate-section {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--background-modifier-border);
+    text-align: center;
+}
+
+.plugin-donate-section h3 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-normal);
+    margin-bottom: 6px;
+}
+
+.plugin-donate-desc {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 16px;
+}
+
+.plugin-donate-qr {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 16px 20px;
+    border: 1px solid var(--background-modifier-border);
+    border-radius: 12px;
+    background: var(--background-secondary);
+}
+
+.plugin-donate-qr img {
+    border-radius: 8px;
+    display: block;
+}
+
+.plugin-donate-label {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin: 0;
+}
+
+/* Logseq TODO/DOING/DONE 任务渲染 */
+.logseq-formater-task {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    list-style: none;
+}
+
+.logseq-formater-task-checkbox {
+    flex-shrink: 0;
+    margin: 0;
+}
+
+.logseq-formater-task-status {
+    flex-shrink: 0;
+    font-size: 0.72em;
+    font-weight: 600;
+    line-height: 1;
+    padding: 2px 6px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+.logseq-formater-status-doing {
+    color: var(--text-accent);
+    background-color: var(--background-modifier-success);
+}
+
+.logseq-formater-task-content {
+    flex: 1;
+}
+
+.logseq-formater-task-content > *:first-child {
+    margin-top: 0;
+}
+
+.logseq-formater-task-content > *:last-child {
+    margin-bottom: 0;
+}
