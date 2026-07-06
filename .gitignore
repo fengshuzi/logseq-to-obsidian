@@ -11,3 +11,6 @@ node_modules/
 .vscode/
 .idea/
 .claude/
+
+# Agent instructions are tracked per-project despite global ignore
+!AGENTS.md
