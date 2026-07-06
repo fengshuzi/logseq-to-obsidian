@@ -24,7 +24,7 @@ var __toCommonJS = (mod) => __copyProps(__defProp({}, "__esModule", { value: tru
 // main.ts
 var main_exports = {};
 __export(main_exports, {
-  default: () => LogseqToObsidian
+  default: () => LogseqFormater
 });
 module.exports = __toCommonJS(main_exports);
 var import_obsidian = require("obsidian");
@@ -32,17 +32,17 @@ var import_view = require("@codemirror/view");
 var DEFAULT_SETTINGS = {
   convertTodoToCheckbox: false
 };
-var LogseqToObsidian = class extends import_obsidian.Plugin {
+var LogseqFormater = class extends import_obsidian.Plugin {
   async onload() {
-    console.log("LogseqToObsidian \u63D2\u4EF6\u5DF2\u52A0\u8F7D - \u7248\u672C 0.2.2");
+    console.debug("LogseqFormater plugin loaded - version 0.2.2");
     await this.loadSettings();
-    this.addSettingTab(new LogseqToObsidianSettingTab(this.app, this));
+    this.addSettingTab(new LogseqFormaterSettingTab(this.app, this));
     this.registerEvent(
       this.app.workspace.on("file-open", (file) => {
         if (file && file.extension === "md") {
           this.convertSyntax(file);
         } else {
-          console.log(`[LogseqToObsidian] \u8DF3\u8FC7\u975EMD\u6587\u4EF6: ${file ? file.path : "null"}`);
+          console.debug(`[LogseqFormater] skip non-MD file: ${file ? file.path : "null"}`);
         }
       })
     );
@@ -51,8 +51,8 @@ var LogseqToObsidian = class extends import_obsidian.Plugin {
     });
     this.registerEditorExtension(this.createBlockRefExtension());
     this.statusBarItem = this.addStatusBarItem();
-    this.statusBarItem.setText("LogseqToObsidian: \u5DF2\u542F\u7528");
-    console.log("LogseqToObsidian \u63D2\u4EF6\u521D\u59CB\u5316\u5B8C\u6210");
+    this.statusBarItem.setText("LogseqFormater: enabled");
+    console.debug("LogseqFormater plugin initialized");
   }
   async loadSettings() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
@@ -88,15 +88,15 @@ var LogseqToObsidian = class extends import_obsidian.Plugin {
               plugin
             );
             span.title = `\u5757\u5F15\u7528: ${this.blockId}`;
-            console.log(`[LogseqToObsidian] \u5B9E\u65F6\u9884\u89C8\u6E32\u67D3\u5757\u5185\u5BB9: ${result.content} (\u6587\u4EF6: ${result.file.basename})`);
+            console.debug(`[LogseqFormater] live preview rendered block content: ${result.content} (file: ${result.file.basename})`);
           } else {
             contentSpan.textContent = `((${this.blockId}))`;
             contentSpan.style.color = "var(--text-error)";
             span.title = "\u672A\u627E\u5230\u5757\u5185\u5BB9";
-            console.log(`[LogseqToObsidian] \u5B9E\u65F6\u9884\u89C8\u672A\u627E\u5230\u5757: ${this.blockId}`);
+            console.debug(`[LogseqFormater] live preview block not found: ${this.blockId}`);
           }
         }).catch((err) => {
-          console.error(`[LogseqToObsidian] \u5B9E\u65F6\u9884\u89C8\u52A0\u8F7D\u5931\u8D25: ${err}`);
+          console.error(`[LogseqFormater] live preview load failed: ${err}`);
           contentSpan.textContent = `((${this.blockId}))`;
           contentSpan.style.color = "var(--text-error)";
         });
@@ -125,7 +125,7 @@ var LogseqToObsidian = class extends import_obsidian.Plugin {
             const blockId = match[1];
             const start = from + match.index;
             const end = start + match[0].length;
-            console.log(`[LogseqToObsidian] \u5B9E\u65F6\u9884\u89C8\u627E\u5230\u5757\u5F15\u7528: ${blockId}`);
+            console.debug(`[LogseqFormater] live preview found block reference: ${blockId}`);
             widgets.push(
               import_view.Decoration.replace({
                 widget: new BlockRefWidget(blockId),
@@ -193,9 +193,9 @@ var LogseqToObsidian = class extends import_obsidian.Plugin {
           }
         }
       }
-      const obsidianMatch = lines[i].match(/^(.+?)\s*\^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s*$/i);
-      if (obsidianMatch && obsidianMatch[2] === blockId) {
-        return obsidianMatch[1].trim();
+      const blockRefMatch = lines[i].match(/^(.+?)\s*\^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s*$/i);
+      if (blockRefMatch && blockRefMatch[2] === blockId) {
+        return blockRefMatch[1].trim();
       }
     }
     return null;
@@ -207,14 +207,14 @@ var LogseqToObsidian = class extends import_obsidian.Plugin {
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent || "";
         if (blockRefPattern.test(text)) {
-          console.log(`[LogseqToObsidian] \u627E\u5230\u5757\u5F15\u7528: ${text}`);
+          console.debug(`[LogseqFormater] found block reference: ${text}`);
           blockRefPattern.lastIndex = 0;
           let match;
           let lastIndex = 0;
           const fragments = [];
           while ((match = blockRefPattern.exec(text)) !== null) {
             const blockId = match[1];
-            console.log(`[LogseqToObsidian] \u5904\u7406\u5757ID: ${blockId}`);
+            console.debug(`[LogseqFormater] processing block ID: ${blockId}`);
             if (match.index > lastIndex) {
               fragments.push(document.createTextNode(text.substring(lastIndex, match.index)));
             }
@@ -238,15 +238,15 @@ var LogseqToObsidian = class extends import_obsidian.Plugin {
                   this
                 );
                 blockRefEl.title = `\u5757\u5F15\u7528: ${blockId}`;
-                console.log(`[LogseqToObsidian] \u6210\u529F\u6E32\u67D3\u5757\u5185\u5BB9: ${result.content} (\u6587\u4EF6: ${result.file.basename})`);
+                console.debug(`[LogseqFormater] rendered block content: ${result.content} (file: ${result.file.basename})`);
               } else {
                 contentSpan.textContent = `((${blockId}))`;
                 contentSpan.style.color = "var(--text-error)";
                 blockRefEl.title = "\u672A\u627E\u5230\u5757\u5185\u5BB9";
-                console.log(`[LogseqToObsidian] \u672A\u627E\u5230\u5757\u5185\u5BB9: ${blockId}`);
+                console.debug(`[LogseqFormater] block content not found: ${blockId}`);
               }
             }).catch((err) => {
-              console.error(`[LogseqToObsidian] \u52A0\u8F7D\u5757\u5185\u5BB9\u5931\u8D25: ${err}`);
+              console.error(`[LogseqFormater] failed to load block content: ${err}`);
               contentSpan.textContent = `((${blockId}))`;
               contentSpan.style.color = "var(--text-error)";
             });
@@ -375,7 +375,7 @@ var LogseqToObsidian = class extends import_obsidian.Plugin {
     }
   }
 };
-var LogseqToObsidianSettingTab = class extends import_obsidian.PluginSettingTab {
+var LogseqFormaterSettingTab = class extends import_obsidian.PluginSettingTab {
   constructor(app, plugin) {
     super(app, plugin);
     this.plugin = plugin;
@@ -383,8 +383,7 @@ var LogseqToObsidianSettingTab = class extends import_obsidian.PluginSettingTab 
   display() {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.createEl("h2", { text: "Logseq to Obsidian \u8F6C\u6362\u8BBE\u7F6E" });
-    new import_obsidian.Setting(containerEl).setName("\u8F6C\u6362 TODO \u4E3A\u590D\u9009\u6846").setDesc("\u542F\u7528\u540E\uFF0C\u5C06 Logseq \u7684 TODO/DOING/DONE \u8F6C\u6362\u4E3A Obsidian \u7684 [ ] \u548C [x] \u590D\u9009\u6846\u3002\u7981\u7528\u540E\u4FDD\u6301 Logseq \u539F\u683C\u5F0F\u3002").addToggle((toggle) => toggle.setValue(this.plugin.settings.convertTodoToCheckbox).onChange(async (value) => {
+    new import_obsidian.Setting(containerEl).setName("\u8F6C\u6362 TODO \u4E3A\u590D\u9009\u6846").setDesc("\u542F\u7528\u540E\uFF0C\u5C06 Logseq \u7684 TODO/DOING/DONE \u8F6C\u6362\u4E3A Markdown \u7684 [ ] \u548C [x] \u590D\u9009\u6846\u3002\u7981\u7528\u540E\u4FDD\u6301 Logseq \u539F\u683C\u5F0F\u3002").addToggle((toggle) => toggle.setValue(this.plugin.settings.convertTodoToCheckbox).onChange(async (value) => {
       this.plugin.settings.convertTodoToCheckbox = value;
       await this.plugin.saveSettings();
     }));

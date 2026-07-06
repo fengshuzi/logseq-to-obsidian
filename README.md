@@ -1,11 +1,11 @@
-# Logseq to Obsidian Converter
+# Logseq Formater
 
-自动将 Logseq 语法转换为 Obsidian 语法的插件。
+自动将 Logseq 语法转换为 Markdown 的插件。
 
 ## 功能特点
 
 - 🔄 **自动转换**：打开 MD 文件时自动转换 Logseq 语法
-- 📝 **块引用转换**：将 Logseq 的块引用转换为 Obsidian 格式
+- 📝 **块引用转换**：将 Logseq 的块引用转换为 Markdown 格式
 - 🔗 **链接转换**：转换页面链接格式
 - ⚡ **无缝集成**：后台自动运行，无需手动操作
 
@@ -13,26 +13,26 @@
 
 ### 方式一：Obsidian 社区市场安装（推荐）
 
-打开 Obsidian 设置 → 第三方插件 → 浏览，搜索 **Logseq to Obsidian Converter** 或 **fengshuzi** 即可安装。
+打开 Obsidian 设置 → 第三方插件 → 浏览，搜索 **Logseq Formater** 或 **fengshuzi** 即可安装。
 
 
-### 方式一：从 GitHub Release 安装（推荐）
+### 方式二：从 GitHub Release 安装（推荐）
 
 1. 前往 [Releases](../../releases) 页面下载最新版本
 2. 下载以下文件：
    - `main.js`
    - `manifest.json`
-3. 在你的 Obsidian 库中创建插件目录：`.obsidian/plugins/logseq-to-obsidian/`
+3. 在你的 Obsidian 库中创建插件目录：`.obsidian/plugins/logseq-formater/`
 4. 将下载的文件复制到该目录
 5. 重启 Obsidian 或刷新插件列表
-6. 在设置中启用"Logseq to Obsidian"插件
+6. 在设置中启用"Logseq Formater"插件
 
-### 方式二：手动安装
+### 方式三：手动安装
 
 ```bash
 cd /path/to/your/vault/.obsidian/plugins
-git clone https://github.com/你的用户名/logseq-to-obsidian.git
-cd logseq-to-obsidian
+git clone https://github.com/fengshuzi/logseq-formater.git
+cd logseq-formater
 npm install
 npm run build
 ```

@@ -1,31 +1,31 @@
 import { Plugin, PluginSettingTab, Setting, MarkdownRenderer, TFile, App } from 'obsidian';
 import { EditorView, Decoration, ViewPlugin, WidgetType } from '@codemirror/view';
 
-interface LogseqToObsidianSettings {
+interface LogseqFormaterSettings {
   convertTodoToCheckbox: boolean;
 }
 
-const DEFAULT_SETTINGS: LogseqToObsidianSettings = {
+const DEFAULT_SETTINGS: LogseqFormaterSettings = {
   convertTodoToCheckbox: false
 };
 
-export default class LogseqToObsidian extends Plugin {
-  settings: LogseqToObsidianSettings;
+export default class LogseqFormater extends Plugin {
+  settings: LogseqFormaterSettings;
   statusBarItem: HTMLElement;
 
   async onload() {
-    console.log('LogseqToObsidian 插件已加载 - 版本 0.2.2');
-    
+    console.debug('LogseqFormater plugin loaded - version 0.2.2');
+
     await this.loadSettings();
-    
-    this.addSettingTab(new LogseqToObsidianSettingTab(this.app, this));
+
+    this.addSettingTab(new LogseqFormaterSettingTab(this.app, this));
     
     this.registerEvent(
       this.app.workspace.on('file-open', (file) => {
         if (file && file.extension === 'md') {
           this.convertSyntax(file);
         } else {
-          console.log(`[LogseqToObsidian] 跳过非MD文件: ${file ? file.path : 'null'}`);
+          console.debug(`[LogseqFormater] skip non-MD file: ${file ? file.path : 'null'}`);
         }
       })
     );
@@ -37,8 +37,8 @@ export default class LogseqToObsidian extends Plugin {
     this.registerEditorExtension(this.createBlockRefExtension());
     
     this.statusBarItem = this.addStatusBarItem();
-    this.statusBarItem.setText('LogseqToObsidian: 已启用');
-    console.log('LogseqToObsidian 插件初始化完成');
+    this.statusBarItem.setText('LogseqFormater: enabled');
+    console.debug('LogseqFormater plugin initialized');
   }
 
   async loadSettings() {
@@ -84,15 +84,15 @@ export default class LogseqToObsidian extends Plugin {
               plugin
             );
             span.title = `块引用: ${this.blockId}`;
-            console.log(`[LogseqToObsidian] 实时预览渲染块内容: ${result.content} (文件: ${result.file.basename})`);
+            console.debug(`[LogseqFormater] live preview rendered block content: ${result.content} (file: ${result.file.basename})`);
           } else {
             contentSpan.textContent = `((${this.blockId}))`;
             contentSpan.style.color = 'var(--text-error)';
             span.title = '未找到块内容';
-            console.log(`[LogseqToObsidian] 实时预览未找到块: ${this.blockId}`);
+            console.debug(`[LogseqFormater] live preview block not found: ${this.blockId}`);
           }
         }).catch(err => {
-          console.error(`[LogseqToObsidian] 实时预览加载失败: ${err}`);
+          console.error(`[LogseqFormater] live preview load failed: ${err}`);
           contentSpan.textContent = `((${this.blockId}))`;
           contentSpan.style.color = 'var(--text-error)';
         });
@@ -131,7 +131,7 @@ export default class LogseqToObsidian extends Plugin {
             const start = from + match.index;
             const end = start + match[0].length;
             
-            console.log(`[LogseqToObsidian] 实时预览找到块引用: ${blockId}`);
+            console.debug(`[LogseqFormater] live preview found block reference: ${blockId}`);
             
             widgets.push(
               Decoration.replace({
@@ -207,9 +207,9 @@ export default class LogseqToObsidian extends Plugin {
         }
       }
       
-      const obsidianMatch = lines[i].match(/^(.+?)\s*\^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s*$/i);
-      if (obsidianMatch && obsidianMatch[2] === blockId) {
-        return obsidianMatch[1].trim();
+      const blockRefMatch = lines[i].match(/^(.+?)\s*\^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s*$/i);
+      if (blockRefMatch && blockRefMatch[2] === blockId) {
+        return blockRefMatch[1].trim();
       }
     }
     
@@ -223,16 +223,16 @@ export default class LogseqToObsidian extends Plugin {
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent || '';
         if (blockRefPattern.test(text)) {
-          console.log(`[LogseqToObsidian] 找到块引用: ${text}`);
+          console.debug(`[LogseqFormater] found block reference: ${text}`);
           blockRefPattern.lastIndex = 0;
-          
+
           let match;
           let lastIndex = 0;
           const fragments: Node[] = [];
-          
+
           while ((match = blockRefPattern.exec(text)) !== null) {
             const blockId = match[1];
-            console.log(`[LogseqToObsidian] 处理块ID: ${blockId}`);
+            console.debug(`[LogseqFormater] processing block ID: ${blockId}`);
             
             if (match.index > lastIndex) {
               fragments.push(document.createTextNode(text.substring(lastIndex, match.index)));
@@ -261,15 +261,15 @@ export default class LogseqToObsidian extends Plugin {
                   this
                 );
                 blockRefEl.title = `块引用: ${blockId}`;
-                console.log(`[LogseqToObsidian] 成功渲染块内容: ${result.content} (文件: ${result.file.basename})`);
+                console.debug(`[LogseqFormater] rendered block content: ${result.content} (file: ${result.file.basename})`);
               } else {
                 contentSpan.textContent = `((${blockId}))`;
                 contentSpan.style.color = 'var(--text-error)';
                 blockRefEl.title = '未找到块内容';
-                console.log(`[LogseqToObsidian] 未找到块内容: ${blockId}`);
+                console.debug(`[LogseqFormater] block content not found: ${blockId}`);
               }
             }).catch(err => {
-              console.error(`[LogseqToObsidian] 加载块内容失败: ${err}`);
+              console.error(`[LogseqFormater] failed to load block content: ${err}`);
               contentSpan.textContent = `((${blockId}))`;
               contentSpan.style.color = 'var(--text-error)';
             });
@@ -415,10 +415,10 @@ export default class LogseqToObsidian extends Plugin {
   }
 }
 
-class LogseqToObsidianSettingTab extends PluginSettingTab {
-  plugin: LogseqToObsidian;
+class LogseqFormaterSettingTab extends PluginSettingTab {
+  plugin: LogseqFormater;
 
-  constructor(app: App, plugin: LogseqToObsidian) {
+  constructor(app: App, plugin: LogseqFormater) {
     super(app, plugin);
     this.plugin = plugin;
   }
@@ -427,11 +427,9 @@ class LogseqToObsidianSettingTab extends PluginSettingTab {
     const { containerEl } = this;
     containerEl.empty();
 
-    containerEl.createEl('h2', { text: 'Logseq to Obsidian 转换设置' });
-
     new Setting(containerEl)
       .setName('转换 TODO 为复选框')
-      .setDesc('启用后，将 Logseq 的 TODO/DOING/DONE 转换为 Obsidian 的 [ ] 和 [x] 复选框。禁用后保持 Logseq 原格式。')
+      .setDesc('启用后，将 Logseq 的 TODO/DOING/DONE 转换为 Markdown 的 [ ] 和 [x] 复选框。禁用后保持 Logseq 原格式。')
       .addToggle(toggle => toggle
         .setValue(this.plugin.settings.convertTodoToCheckbox)
         .onChange(async (value) => {

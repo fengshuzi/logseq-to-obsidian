@@ -1,7 +1,7 @@
 {
-  "name": "logseq-to-obsidian",
+  "name": "logseq-formater",
   "version": "0.2.2",
-  "description": "Automatically converts Logseq syntax to Obsidian syntax when opening MD files",
+  "description": "Automatically converts Logseq syntax to Markdown when opening MD files.",
   "main": "main.js",
   "scripts": {
     "dev": "node esbuild.config.mjs",
@@ -11,10 +11,9 @@
     "lint": "eslint \"**/*.{ts,tsx}\""
   },
   "keywords": [
-    "obsidian",
-    "obsidian-plugin",
     "logseq",
-    "converter"
+    "converter",
+    "markdown"
   ],
   "author": "lizhifeng",
   "license": "MIT",

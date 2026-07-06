@@ -1,4 +1,4 @@
-import { copyFileSync, mkdirSync, existsSync } from 'fs';
+import { copyFileSync, mkdirSync, existsSync, rmSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
@@ -17,27 +17,27 @@ const NOTE_DEMO_PATH = join(
 const VAULTS = [
   {
     name: 'Mobile',
-    path: join(BASE_PATH, '.obsidian-mobile/plugins/logseq-to-obsidian')
+    path: join(BASE_PATH, '.obsidian-mobile/plugins/logseq-formater')
   },
   {
     name: 'Pro',
-    path: join(BASE_PATH, '.obsidian-pro/plugins/logseq-to-obsidian')
+    path: join(BASE_PATH, '.obsidian-pro/plugins/logseq-formater')
   },
   {
     name: 'iPad',
-    path: join(BASE_PATH, '.obsidian-ipad/plugins/logseq-to-obsidian')
+    path: join(BASE_PATH, '.obsidian-ipad/plugins/logseq-formater')
   },
   {
     name: '2017',
-    path: join(BASE_PATH, '.obsidian-2017/plugins/logseq-to-obsidian')
+    path: join(BASE_PATH, '.obsidian-2017/plugins/logseq-formater')
   },
   {
     name: 'Zhang',
-    path: join(BASE_PATH, '.obsidian-zhang/plugins/logseq-to-obsidian')
+    path: join(BASE_PATH, '.obsidian-zhang/plugins/logseq-formater')
   },
   {
     name: 'Note-Demo',
-    path: join(NOTE_DEMO_PATH, '.obsidian/plugins/logseq-to-obsidian')
+    path: join(NOTE_DEMO_PATH, '.obsidian/plugins/logseq-formater')
   }
 ];
 
@@ -47,7 +47,7 @@ const FILES_TO_COPY = [
   { source: 'dist/manifest.json', target: 'manifest.json' }
 ];
 
-console.log('📦 开始部署 Logseq to Obsidian 插件到所有 vaults...\n');
+console.log('📦 开始部署 Logseq Formater 插件到所有 vaults...\n');
 
 // 复制文件到每个 vault
 VAULTS.forEach(vault => {
@@ -87,6 +87,17 @@ VAULTS.forEach(vault => {
     }
   });
 
+  // 清理旧插件目录（改名后遗留）
+  const oldPluginPath = join(vault.path, '../logseq-to-obsidian');
+  if (existsSync(oldPluginPath)) {
+    try {
+      rmSync(oldPluginPath, { recursive: true, force: true });
+      console.log(`  🧹 已清理旧插件目录: ${oldPluginPath}`);
+    } catch (error) {
+      console.error(`  ❌ 清理旧插件目录失败: ${oldPluginPath}`, error.message);
+    }
+  }
+
   console.log('');
 });
 
@@ -97,7 +108,6 @@ console.log('   - 搜索 "Reload app without saving"');
 console.log('   - 或者禁用再启用插件\n');
 
 // 清理 dist 文件夹
-import { rmSync } from 'fs';
 try {
   rmSync('dist', { recursive: true, force: true });
   console.log('🧹 已清理 dist 文件夹\n');
