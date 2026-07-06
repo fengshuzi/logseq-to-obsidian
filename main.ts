@@ -1,5 +1,5 @@
-import { Plugin, PluginSettingTab, Setting, MarkdownRenderer, TFile, App } from 'obsidian';
-import { EditorView, Decoration, ViewPlugin, WidgetType } from '@codemirror/view';
+import { Plugin, PluginSettingTab, Setting, MarkdownRenderer, TFile, App, TFolder, MarkdownPostProcessorContext } from 'obsidian';
+import { EditorView, Decoration, ViewPlugin, WidgetType, DecorationSet, ViewUpdate } from '@codemirror/view';
 
 type TodoRenderMode = 'preserve' | 'render-as-task' | 'convert-to-checkbox';
 
@@ -25,7 +25,7 @@ export default class LogseqFormater extends Plugin {
     this.registerEvent(
       this.app.workspace.on('file-open', (file) => {
         if (file && file.extension === 'md') {
-          this.convertSyntax(file);
+          void this.convertSyntax(file);
         } else {
           console.debug(`[LogseqFormater] skip non-MD file: ${file ? file.path : 'null'}`);
         }
@@ -33,7 +33,7 @@ export default class LogseqFormater extends Plugin {
     );
     
     this.registerMarkdownPostProcessor((element, context) => {
-      this.renderBlockReferences(element, context);
+      void this.renderBlockReferences(element, context);
       this.renderTodosAsTasks(element);
     });
     
@@ -45,7 +45,7 @@ export default class LogseqFormater extends Plugin {
   }
 
   async loadSettings() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData()) as LogseqFormaterSettings;
   }
 
   async saveSettings() {
@@ -109,13 +109,13 @@ export default class LogseqFormater extends Plugin {
     }
     
     return ViewPlugin.fromClass(class {
-      decorations: any;
+      decorations: DecorationSet;
 
       constructor(view: EditorView) {
         this.decorations = this.buildDecorations(view);
       }
-      
-      update(update: any) {
+
+      update(update: ViewUpdate) {
         if (update.docChanged || update.viewportChanged) {
           this.decorations = this.buildDecorations(update.view);
         }
@@ -149,34 +149,32 @@ export default class LogseqFormater extends Plugin {
         return Decoration.set(widgets);
       }
     }, {
-      decorations: v => v.decorations
+      decorations: (v: { decorations: DecorationSet }) => v.decorations
     });
   }
 
   async findBlockContent(blockId: string): Promise<{ content: string; file: TFile } | null> {
     const searchPaths = ['journals', 'pages'];
     
-    const searchFolder = async (folder: any): Promise<{ content: string; file: TFile } | null> => {
-      if (!folder || !folder.children) return null;
-      
+    const searchFolder = async (folder: TFolder): Promise<{ content: string; file: TFile } | null> => {
       for (const child of folder.children) {
-        if (child.extension === 'md') {
+        if (child instanceof TFile && child.extension === 'md') {
           const fileContent = await this.app.vault.read(child);
           const blockContent = this.extractBlockContent(fileContent, blockId);
           if (blockContent) {
             return { content: blockContent, file: child };
           }
-        } else if (child.children) {
+        } else if (child instanceof TFolder) {
           const result = await searchFolder(child);
           if (result) return result;
         }
       }
       return null;
     };
-    
+
     for (const path of searchPaths) {
       const folder = this.app.vault.getAbstractFileByPath(path);
-      if (folder) {
+      if (folder && folder instanceof TFolder) {
         const result = await searchFolder(folder);
         if (result) return result;
       }
@@ -219,7 +217,7 @@ export default class LogseqFormater extends Plugin {
     return null;
   }
   
-  async renderBlockReferences(element: HTMLElement, context: any) {
+  async renderBlockReferences(element: HTMLElement, context: MarkdownPostProcessorContext) {
     const blockRefPattern = /\(\(([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\)\)/g;
     
     const processNode = (node: Node) => {
@@ -398,8 +396,8 @@ export default class LogseqFormater extends Plugin {
     
     newContent = newContent.replace(
       /([ \t]*)- DONE (.+?)\s*\n([ \t]*:LOGBOOK:\s*\n((?:[ \t]*CLOCK: \[.*?\]--\[.*?\] =>\s*\d{2}:\d{2}:\d{2}\s*\n)+)[ \t]*:END:)/gms,
-      (match, indent, taskText, logbook, clockBlock) => {
-        const times = clockBlock.match(/=> *(\d{2}:\d{2}:\d{2})/g) || [];
+      (_match: string, indent: string, taskText: string, _logbook: string, clockBlock: string) => {
+        const times = clockBlock.match(/=> *(\d{2}:\d{2}:\d{2})/g) ?? [];
         const totalSeconds = times.reduce((sum: number, t: string) => sum + timeStrToSeconds(t.replace(/=> */g, '')), 0);
         const durationStr = formatDuration(totalSeconds);
         return `${indent}- DONE ${taskText.trim()} ${durationStr}`;

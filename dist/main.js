@@ -41,14 +41,14 @@ var LogseqFormater = class extends import_obsidian.Plugin {
     this.registerEvent(
       this.app.workspace.on("file-open", (file) => {
         if (file && file.extension === "md") {
-          this.convertSyntax(file);
+          void this.convertSyntax(file);
         } else {
           console.debug(`[LogseqFormater] skip non-MD file: ${file ? file.path : "null"}`);
         }
       })
     );
     this.registerMarkdownPostProcessor((element, context) => {
-      this.renderBlockReferences(element, context);
+      void this.renderBlockReferences(element, context);
       this.renderTodosAsTasks(element);
     });
     this.registerEditorExtension(this.createBlockRefExtension());
@@ -146,16 +146,14 @@ var LogseqFormater = class extends import_obsidian.Plugin {
   async findBlockContent(blockId) {
     const searchPaths = ["journals", "pages"];
     const searchFolder = async (folder) => {
-      if (!folder || !folder.children)
-        return null;
       for (const child of folder.children) {
-        if (child.extension === "md") {
+        if (child instanceof import_obsidian.TFile && child.extension === "md") {
           const fileContent = await this.app.vault.read(child);
           const blockContent = this.extractBlockContent(fileContent, blockId);
           if (blockContent) {
             return { content: blockContent, file: child };
           }
-        } else if (child.children) {
+        } else if (child instanceof import_obsidian.TFolder) {
           const result = await searchFolder(child);
           if (result)
             return result;
@@ -165,7 +163,7 @@ var LogseqFormater = class extends import_obsidian.Plugin {
     };
     for (const path of searchPaths) {
       const folder = this.app.vault.getAbstractFileByPath(path);
-      if (folder) {
+      if (folder && folder instanceof import_obsidian.TFolder) {
         const result = await searchFolder(folder);
         if (result)
           return result;
@@ -360,8 +358,9 @@ var LogseqFormater = class extends import_obsidian.Plugin {
     newContent = linesForExistingBlocks.join("\n");
     newContent = newContent.replace(
       /([ \t]*)- DONE (.+?)\s*\n([ \t]*:LOGBOOK:\s*\n((?:[ \t]*CLOCK: \[.*?\]--\[.*?\] =>\s*\d{2}:\d{2}:\d{2}\s*\n)+)[ \t]*:END:)/gms,
-      (match, indent, taskText, logbook, clockBlock) => {
-        const times = clockBlock.match(/=> *(\d{2}:\d{2}:\d{2})/g) || [];
+      (_match, indent, taskText, _logbook, clockBlock) => {
+        var _a2;
+        const times = (_a2 = clockBlock.match(/=> *(\d{2}:\d{2}:\d{2})/g)) != null ? _a2 : [];
         const totalSeconds = times.reduce((sum, t) => sum + timeStrToSeconds(t.replace(/=> */g, "")), 0);
         const durationStr = formatDuration(totalSeconds);
         return `${indent}- DONE ${taskText.trim()} ${durationStr}`;
