@@ -1,12 +1,14 @@
 import { Plugin, PluginSettingTab, Setting, MarkdownRenderer, TFile, App } from 'obsidian';
 import { EditorView, Decoration, ViewPlugin, WidgetType } from '@codemirror/view';
 
+type TodoRenderMode = 'preserve' | 'render-as-task' | 'convert-to-checkbox';
+
 interface LogseqFormaterSettings {
-  convertTodoToCheckbox: boolean;
+  todoRenderMode: TodoRenderMode;
 }
 
 const DEFAULT_SETTINGS: LogseqFormaterSettings = {
-  convertTodoToCheckbox: false
+  todoRenderMode: 'render-as-task'
 };
 
 export default class LogseqFormater extends Plugin {
@@ -32,6 +34,7 @@ export default class LogseqFormater extends Plugin {
     
     this.registerMarkdownPostProcessor((element, context) => {
       this.renderBlockReferences(element, context);
+      this.renderTodosAsTasks(element);
     });
     
     this.registerEditorExtension(this.createBlockRefExtension());
@@ -403,7 +406,7 @@ export default class LogseqFormater extends Plugin {
       }
     );
 
-    if (this.settings.convertTodoToCheckbox) {
+    if (this.settings.todoRenderMode === 'convert-to-checkbox') {
       newContent = newContent.replace(/([ \t]*)- TODO\b/gm, '$1- [ ]');
       newContent = newContent.replace(/([ \t]*)- DOING\b/gm, '$1- [ ]');
       newContent = newContent.replace(/([ \t]*)- DONE\b(.*)/gm, '$1- [x]$2');
@@ -412,6 +415,65 @@ export default class LogseqFormater extends Plugin {
     if (newContent !== content) {
       await this.app.vault.modify(file, newContent);
     }
+  }
+
+  renderTodosAsTasks(element: HTMLElement) {
+    if (this.settings.todoRenderMode !== 'render-as-task') {
+      return;
+    }
+
+    const taskItems = element.querySelectorAll('li');
+    taskItems.forEach((item) => {
+      // 跳过已渲染的任务或代码块内部
+      if (item.closest('pre, code') || item.classList.contains('logseq-formater-task')) {
+        return;
+      }
+
+      const text = item.textContent || '';
+      const match = text.match(/^\s*(TODO|DOING|DONE)\s+(.*)$/is);
+      if (!match) {
+        return;
+      }
+
+      const status = match[1].toUpperCase() as 'TODO' | 'DOING' | 'DONE';
+      const statusPattern = new RegExp(`^\\s*${status}\\s+`, 'i');
+      const originalChildren = Array.from(item.childNodes);
+
+      item.empty();
+      item.addClass('logseq-formater-task');
+      item.addClass(`logseq-formater-task-${status.toLowerCase()}`);
+
+      const checkbox = item.createEl('input', {
+        type: 'checkbox',
+        cls: 'logseq-formater-task-checkbox task-list-item-checkbox'
+      });
+      checkbox.checked = status === 'DONE';
+      checkbox.disabled = true;
+
+      if (status !== 'TODO' && status !== 'DONE') {
+        item.createEl('span', {
+          cls: `logseq-formater-task-status logseq-formater-status-${status.toLowerCase()}`,
+          text: status
+        });
+      }
+
+      const contentSpan = item.createEl('span', { cls: 'logseq-formater-task-content' });
+      let prefixRemoved = false;
+      originalChildren.forEach((child) => {
+        if (!prefixRemoved && child.nodeType === Node.TEXT_NODE) {
+          const childText = child.textContent || '';
+          const remaining = childText.replace(statusPattern, '');
+          if (remaining !== childText) {
+            prefixRemoved = true;
+            if (remaining) {
+              contentSpan.appendChild(document.createTextNode(remaining));
+            }
+            return;
+          }
+        }
+        contentSpan.appendChild(child);
+      });
+    });
   }
 }
 
@@ -428,12 +490,15 @@ class LogseqFormaterSettingTab extends PluginSettingTab {
     containerEl.empty();
 
     new Setting(containerEl)
-      .setName('转换 TODO 为复选框')
-      .setDesc('启用后，将 Logseq 的 TODO/DOING/DONE 转换为 Markdown 的 [ ] 和 [x] 复选框。禁用后保持 Logseq 原格式。')
-      .addToggle(toggle => toggle
-        .setValue(this.plugin.settings.convertTodoToCheckbox)
+      .setName('TODO 渲染方式')
+      .setDesc('选择 Logseq 的 TODO/DOING/DONE 在 Obsidian 中的显示方式。')
+      .addDropdown(dropdown => dropdown
+        .addOption('preserve', '保留原样（TODO / DOING / DONE）')
+        .addOption('render-as-task', '渲染为任务（推荐，不改笔记原文）')
+        .addOption('convert-to-checkbox', '转换为标准 Markdown 复选框（会修改笔记原文）')
+        .setValue(this.plugin.settings.todoRenderMode)
         .onChange(async (value) => {
-          this.plugin.settings.convertTodoToCheckbox = value;
+          this.plugin.settings.todoRenderMode = value as TodoRenderMode;
           await this.plugin.saveSettings();
         }));
 

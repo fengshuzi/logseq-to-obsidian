@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Build outputs (keep dist for releases)
+*.map
+
+# OS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+.claude/
