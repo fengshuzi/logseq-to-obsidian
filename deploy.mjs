@@ -73,20 +73,6 @@ VAULTS.forEach(vault => {
     }
   });
 
-  // 复制插件运行时所需的静态资源
-  const pluginAssets = ['wechat-donate.jpg'];
-  const assetsTarget = join(vault.path, 'assets');
-  if (!existsSync(assetsTarget)) mkdirSync(assetsTarget, { recursive: true });
-  pluginAssets.forEach((fileName) => {
-    const src = join('assets', fileName);
-    if (existsSync(src)) {
-      copyFileSync(src, join(assetsTarget, fileName));
-      console.log(`  ✓ 已复制 assets/${fileName}`);
-    } else {
-      console.log(`  ⚠️  警告: assets/${fileName} 不存在`);
-    }
-  });
-
   // 清理旧插件目录（改名后遗留）
   const oldPluginPath = join(vault.path, '../logseq-to-obsidian');
   if (existsSync(oldPluginPath)) {

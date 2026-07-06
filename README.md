@@ -73,6 +73,6 @@ MIT
 如果这个插件帮助了你，欢迎扫码打赏，感谢支持！
 
 <div align="center">
-  <img src="./assets/wechat-donate.jpg" alt="微信打赏" width="200" />
+  <img src="https://raw.githubusercontent.com/fengshuzi/images/main/wechat-donate.jpg" alt="微信打赏" width="200" />
   <p><sub>微信扫码打赏</sub></p>
 </div>

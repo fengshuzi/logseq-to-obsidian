@@ -50,18 +50,6 @@ if (prod) {
 		console.log('✅ 已复制 manifest.json → dist/manifest.json');
 	}
 
-	// Copy assets
-	if (existsSync('assets')) {
-		if (!existsSync('dist/assets')) mkdirSync('dist/assets', { recursive: true });
-		['wechat-donate.jpg'].forEach(f => {
-			const src = `assets/${f}`;
-			if (existsSync(src)) {
-				copyFileSync(src, `dist/assets/${f}`);
-				console.log(`✅ 已复制 ${src} → dist/assets/${f}`);
-			}
-		});
-	}
-	
 	process.exit(0);
 } else {
 	await context.watch();
