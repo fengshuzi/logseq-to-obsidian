@@ -33,7 +33,63 @@ var import_view = require("@codemirror/view");
 var DEFAULT_SETTINGS = {
   todoRenderMode: "render-as-task"
 };
+var UUID_PATTERN = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
+var BLOCK_REF_REGEX = new RegExp(`\\((${UUID_PATTERN})\\)`, "g");
+var ID_LINE_REGEX = new RegExp(`^(.*?)\\s*id::\\s*(${UUID_PATTERN})\\s*$`);
+var BLOCK_ANCHOR_REGEX = new RegExp(`^(.+?)\\s*\\^(${UUID_PATTERN})\\s*$`);
+var ID_ONLY_LINE_REGEX = new RegExp(`^\\s*id::\\s*(${UUID_PATTERN})\\s*$`, "i");
+var BLOCK_ANCHOR_CONTENT_REGEX = new RegExp(`^(.+?)\\s*\\^(${UUID_PATTERN})\\s*$`, "i");
+var LOGBOOK_REGEX = /([ \t]*)- DONE (.+?)\s*\n([ \t]*:LOGBOOK:\s*\n((?:[ \t]*CLOCK: \[.*?\]--\[.*?\] =>\s*\d{2}:\d{2}:\d{2}\s*\n)+)[ \t]*:END:)/gms;
+var CLOCK_REGEX = /=> *(\d{2}:\d{2}:\d{2})/g;
+var TODO_STATUS_REGEX = /^\s*(TODO|DOING|DONE)\s+(.*)$/is;
+function parseTimeToSeconds(t) {
+  const [h, m, s] = t.split(":").map(Number);
+  return h * 3600 + m * 60 + s;
+}
+function formatDuration(seconds) {
+  if (seconds < 60)
+    return `${seconds}\u79D2`;
+  if (seconds < 3600)
+    return `${Math.floor(seconds / 60)}\u5206\u949F`;
+  return `${Math.floor(seconds / 3600)}\u5C0F\u65F6`;
+}
+function convertLogbook(content) {
+  return content.replace(LOGBOOK_REGEX, (_match, indent, taskText, _logbook, clockBlock) => {
+    var _a;
+    const times = (_a = clockBlock.match(CLOCK_REGEX)) != null ? _a : [];
+    const totalSeconds = times.reduce((sum, t) => sum + parseTimeToSeconds(t.replace(/=> */g, "")), 0);
+    return `${indent}- DONE ${taskText.trim()} ${formatDuration(totalSeconds)}`;
+  });
+}
+function convertTodosToCheckboxes(content) {
+  return content.replace(/([ \t]*)- TODO\b/gm, "$1- [ ]").replace(/([ \t]*)- DOING\b/gm, "$1- [ ]").replace(/([ \t]*)- DONE\b(.*)/gm, "$1- [x]$2");
+}
+var BlockRefWidget = class extends import_view.WidgetType {
+  constructor(plugin, blockId) {
+    super();
+    this.plugin = plugin;
+    this.blockId = blockId;
+  }
+  toDOM() {
+    const span = document.createElement("span");
+    span.className = "logseq-block-ref";
+    span.style.cssText = "display: inline;";
+    this.plugin.populateBlockRef(span, this.blockId, "");
+    return span;
+  }
+  eq(other) {
+    return other instanceof BlockRefWidget && other.blockId === this.blockId;
+  }
+  ignoreEvent() {
+    return false;
+  }
+};
 var LogseqFormater = class extends import_obsidian.Plugin {
+  constructor() {
+    super(...arguments);
+    this.blockContentCache = /* @__PURE__ */ new Map();
+    this.BLOCK_CACHE_TTL_MS = 3e3;
+  }
   async onload() {
     console.debug("LogseqFormater plugin loaded - version 0.2.2");
     await this.loadSettings();
@@ -48,7 +104,7 @@ var LogseqFormater = class extends import_obsidian.Plugin {
       })
     );
     this.registerMarkdownPostProcessor((element, context) => {
-      void this.renderBlockReferences(element, context);
+      this.renderBlockReferences(element, context);
       this.renderTodosAsTasks(element);
     });
     this.registerEditorExtension(this.createBlockRefExtension());
@@ -64,50 +120,6 @@ var LogseqFormater = class extends import_obsidian.Plugin {
   }
   createBlockRefExtension() {
     const plugin = this;
-    class BlockRefWidget extends import_view.WidgetType {
-      constructor(blockId) {
-        super();
-        this.blockId = blockId;
-      }
-      toDOM() {
-        const span = document.createElement("span");
-        span.className = "logseq-block-ref";
-        span.style.cssText = "display: inline;";
-        const refIcon = document.createElement("span");
-        refIcon.textContent = "\u2197 ";
-        refIcon.style.cssText = "opacity: 0.5; font-size: 0.9em;";
-        span.appendChild(refIcon);
-        const contentSpan = document.createElement("span");
-        contentSpan.textContent = "\u52A0\u8F7D\u4E2D...";
-        span.appendChild(contentSpan);
-        plugin.findBlockContent(this.blockId).then(async (result) => {
-          if (result) {
-            contentSpan.empty();
-            await import_obsidian.MarkdownRenderer.renderMarkdown(
-              result.content,
-              contentSpan,
-              "",
-              plugin
-            );
-            span.title = `\u5757\u5F15\u7528: ${this.blockId}`;
-            console.debug(`[LogseqFormater] live preview rendered block content: ${result.content} (file: ${result.file.basename})`);
-          } else {
-            contentSpan.textContent = `((${this.blockId}))`;
-            contentSpan.style.color = "var(--text-error)";
-            span.title = "\u672A\u627E\u5230\u5757\u5185\u5BB9";
-            console.debug(`[LogseqFormater] live preview block not found: ${this.blockId}`);
-          }
-        }).catch((err) => {
-          console.error(`[LogseqFormater] live preview load failed: ${err}`);
-          contentSpan.textContent = `((${this.blockId}))`;
-          contentSpan.style.color = "var(--text-error)";
-        });
-        return span;
-      }
-      ignoreEvent() {
-        return false;
-      }
-    }
     return import_view.ViewPlugin.fromClass(class {
       constructor(view) {
         this.decorations = this.buildDecorations(view);
@@ -119,18 +131,18 @@ var LogseqFormater = class extends import_obsidian.Plugin {
       }
       buildDecorations(view) {
         const widgets = [];
-        const blockRefPattern = /\(\(([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\)\)/g;
-        for (let { from, to } of view.visibleRanges) {
+        const pattern = new RegExp(BLOCK_REF_REGEX.source, BLOCK_REF_REGEX.flags);
+        for (const { from, to } of view.visibleRanges) {
           const text = view.state.doc.sliceString(from, to);
           let match;
-          while ((match = blockRefPattern.exec(text)) !== null) {
+          while ((match = pattern.exec(text)) !== null) {
             const blockId = match[1];
             const start = from + match.index;
             const end = start + match[0].length;
             console.debug(`[LogseqFormater] live preview found block reference: ${blockId}`);
             widgets.push(
               import_view.Decoration.replace({
-                widget: new BlockRefWidget(blockId),
+                widget: new BlockRefWidget(plugin, blockId),
                 inclusive: false,
                 block: false
               }).range(start, end)
@@ -144,6 +156,15 @@ var LogseqFormater = class extends import_obsidian.Plugin {
     });
   }
   async findBlockContent(blockId) {
+    const cached = this.blockContentCache.get(blockId);
+    if (cached && Date.now() - cached.timestamp < this.BLOCK_CACHE_TTL_MS) {
+      return cached.result;
+    }
+    const result = await this.searchBlockContent(blockId);
+    this.blockContentCache.set(blockId, { result, timestamp: Date.now() });
+    return result;
+  }
+  async searchBlockContent(blockId) {
     const searchPaths = ["journals", "pages"];
     const searchFolder = async (folder) => {
       for (const child of folder.children) {
@@ -163,7 +184,7 @@ var LogseqFormater = class extends import_obsidian.Plugin {
     };
     for (const path of searchPaths) {
       const folder = this.app.vault.getAbstractFileByPath(path);
-      if (folder && folder instanceof import_obsidian.TFolder) {
+      if (folder instanceof import_obsidian.TFolder) {
         const result = await searchFolder(folder);
         if (result)
           return result;
@@ -184,7 +205,7 @@ var LogseqFormater = class extends import_obsidian.Plugin {
   extractBlockContent(fileContent, blockId) {
     const lines = fileContent.split("\n");
     for (let i = 0; i < lines.length; i++) {
-      const idMatch = lines[i].match(/^\s*id::\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s*$/i);
+      const idMatch = lines[i].match(ID_ONLY_LINE_REGEX);
       if (idMatch && idMatch[1] === blockId) {
         for (let j = i - 1; j >= 0; j--) {
           const line = lines[j].trim();
@@ -193,86 +214,84 @@ var LogseqFormater = class extends import_obsidian.Plugin {
           }
         }
       }
-      const blockRefMatch = lines[i].match(/^(.+?)\s*\^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s*$/i);
+      const blockRefMatch = lines[i].match(BLOCK_ANCHOR_CONTENT_REGEX);
       if (blockRefMatch && blockRefMatch[2] === blockId) {
         return blockRefMatch[1].trim();
       }
     }
     return null;
   }
-  async renderBlockReferences(element, context) {
-    const blockRefPattern = /\(\(([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\)\)/g;
+  populateBlockRef(container, blockId, sourcePath) {
+    const refIcon = document.createElement("span");
+    refIcon.textContent = "\u2197 ";
+    refIcon.style.cssText = "opacity: 0.5; font-size: 0.9em;";
+    const contentSpan = document.createElement("span");
+    contentSpan.textContent = "\u52A0\u8F7D\u4E2D...";
+    void this.findBlockContent(blockId).then(async (result) => {
+      if (result) {
+        contentSpan.empty();
+        await import_obsidian.MarkdownRenderer.renderMarkdown(result.content, contentSpan, sourcePath, this);
+        container.title = `\u5757\u5F15\u7528: ${blockId}`;
+        console.debug(`[LogseqFormater] rendered block content: ${result.content} (file: ${result.file.basename})`);
+      } else {
+        contentSpan.textContent = `(({blockId}))`;
+        contentSpan.style.color = "var(--text-error)";
+        container.title = "\u672A\u627E\u5230\u5757\u5185\u5BB9";
+        console.debug(`[LogseqFormater] block content not found: ${blockId}`);
+      }
+    }).catch((err) => {
+      console.error(`[LogseqFormater] failed to load block content: ${err}`);
+      contentSpan.textContent = `(({blockId}))`;
+      contentSpan.style.color = "var(--text-error)";
+    });
+  }
+  renderBlockReferences(element, context) {
+    this.walkAndRenderBlockRefs(element, context.sourcePath);
+  }
+  walkAndRenderBlockRefs(element, sourcePath) {
+    const pattern = new RegExp(BLOCK_REF_REGEX.source, BLOCK_REF_REGEX.flags);
     const processNode = (node) => {
-      var _a;
       if (node.nodeType === Node.TEXT_NODE) {
         const text = node.textContent || "";
-        if (blockRefPattern.test(text)) {
-          console.debug(`[LogseqFormater] found block reference: ${text}`);
-          blockRefPattern.lastIndex = 0;
-          let match;
-          let lastIndex = 0;
-          const fragments = [];
-          while ((match = blockRefPattern.exec(text)) !== null) {
-            const blockId = match[1];
-            console.debug(`[LogseqFormater] processing block ID: ${blockId}`);
-            if (match.index > lastIndex) {
-              fragments.push(document.createTextNode(text.substring(lastIndex, match.index)));
-            }
-            const blockRefEl = document.createElement("span");
-            blockRefEl.className = "logseq-block-ref";
-            blockRefEl.style.cssText = "display: inline;";
-            const refIcon = document.createElement("span");
-            refIcon.textContent = "\u2197 ";
-            refIcon.style.cssText = "opacity: 0.5; font-size: 0.9em;";
-            blockRefEl.appendChild(refIcon);
-            const contentSpan = document.createElement("span");
-            contentSpan.textContent = "\u52A0\u8F7D\u4E2D...";
-            blockRefEl.appendChild(contentSpan);
-            this.findBlockContent(blockId).then(async (result) => {
-              if (result) {
-                contentSpan.empty();
-                await import_obsidian.MarkdownRenderer.renderMarkdown(
-                  result.content,
-                  contentSpan,
-                  context.sourcePath,
-                  this
-                );
-                blockRefEl.title = `\u5757\u5F15\u7528: ${blockId}`;
-                console.debug(`[LogseqFormater] rendered block content: ${result.content} (file: ${result.file.basename})`);
-              } else {
-                contentSpan.textContent = `((${blockId}))`;
-                contentSpan.style.color = "var(--text-error)";
-                blockRefEl.title = "\u672A\u627E\u5230\u5757\u5185\u5BB9";
-                console.debug(`[LogseqFormater] block content not found: ${blockId}`);
-              }
-            }).catch((err) => {
-              console.error(`[LogseqFormater] failed to load block content: ${err}`);
-              contentSpan.textContent = `((${blockId}))`;
-              contentSpan.style.color = "var(--text-error)";
+        if (!pattern.test(text)) {
+          pattern.lastIndex = 0;
+          return;
+        }
+        pattern.lastIndex = 0;
+        const fragments = [];
+        let match;
+        let lastIndex = 0;
+        while ((match = pattern.exec(text)) !== null) {
+          const blockId = match[1];
+          console.debug(`[LogseqFormater] processing block ID: ${blockId}`);
+          if (match.index > lastIndex) {
+            fragments.push(document.createTextNode(text.substring(lastIndex, match.index)));
+          }
+          const blockRefEl = document.createElement("span");
+          blockRefEl.className = "logseq-block-ref";
+          blockRefEl.style.cssText = "display: inline;";
+          this.populateBlockRef(blockRefEl, blockId, sourcePath);
+          fragments.push(blockRefEl);
+          lastIndex = pattern.lastIndex;
+        }
+        if (lastIndex < text.length) {
+          fragments.push(document.createTextNode(text.substring(lastIndex)));
+        }
+        if (fragments.length > 0) {
+          const parent = node.parentNode;
+          if (parent) {
+            fragments.forEach((fragment) => {
+              parent.insertBefore(fragment, node);
             });
-            fragments.push(blockRefEl);
-            lastIndex = blockRefPattern.lastIndex;
-          }
-          if (lastIndex < text.length) {
-            fragments.push(document.createTextNode(text.substring(lastIndex)));
-          }
-          if (fragments.length > 0) {
-            const parent = node.parentNode;
-            if (parent) {
-              fragments.forEach((fragment) => {
-                parent.insertBefore(fragment, node);
-              });
-              parent.removeChild(node);
-            }
+            parent.removeChild(node);
           }
         }
       } else if (node.nodeType === Node.ELEMENT_NODE) {
         const el = node;
-        if (el.tagName === "CODE" || el.tagName === "PRE" || ((_a = el.classList) == null ? void 0 : _a.contains("logseq-block-ref"))) {
+        if (el.tagName === "CODE" || el.tagName === "PRE" || el.classList.contains("logseq-block-ref")) {
           return;
         }
-        const children = Array.from(node.childNodes);
-        children.forEach((child) => processNode(child));
+        Array.from(node.childNodes).forEach((child) => processNode(child));
       }
     };
     processNode(element);
@@ -281,23 +300,11 @@ var LogseqFormater = class extends import_obsidian.Plugin {
     var _a;
     const content = await this.app.vault.read(file);
     let newContent = content;
-    const timeStrToSeconds = function(t) {
-      const [h, m, s] = t.split(":").map(Number);
-      return h * 3600 + m * 60 + s;
-    };
-    const formatDuration = function(seconds) {
-      if (seconds < 60)
-        return `${seconds}\u79D2`;
-      if (seconds < 3600)
-        return `${Math.floor(seconds / 60)}\u5206\u949F`;
-      return `${Math.floor(seconds / 3600)}\u5C0F\u65F6`;
-    };
-    let linesForIdProcessing = newContent.split("\n");
-    let updatedLines = [];
-    let skipIndices = /* @__PURE__ */ new Set();
-    const idLinePattern = /^(.*?)\s*id::\s*([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s*$/;
+    const linesForIdProcessing = newContent.split("\n");
+    const updatedLines = [];
+    const skipIndices = /* @__PURE__ */ new Set();
     for (let i = 0; i < linesForIdProcessing.length; i++) {
-      const match = idLinePattern.exec(linesForIdProcessing[i]);
+      const match = ID_LINE_REGEX.exec(linesForIdProcessing[i]);
       if (match) {
         const blockId = match[2];
         for (let j = i - 1; j >= 0; j--) {
@@ -320,11 +327,9 @@ var LogseqFormater = class extends import_obsidian.Plugin {
             if (needsEmptyLineAfterBlock) {
               linesForIdProcessing.splice(j + 1, 0, "", "");
               for (let k = 0; k < linesForIdProcessing.length; k++) {
-                if (k > j) {
-                  if (skipIndices.has(k)) {
-                    skipIndices.delete(k);
-                    skipIndices.add(k + 2);
-                  }
+                if (k > j && skipIndices.has(k)) {
+                  skipIndices.delete(k);
+                  skipIndices.add(k + 2);
                 }
               }
               i += 2;
@@ -341,35 +346,18 @@ var LogseqFormater = class extends import_obsidian.Plugin {
       }
     }
     newContent = updatedLines.join("\n");
-    let linesForExistingBlocks = newContent.split("\n");
+    const linesForExistingBlocks = newContent.split("\n");
     for (let i = 0; i < linesForExistingBlocks.length; i++) {
-      const line = linesForExistingBlocks[i];
-      const blockMatch = line.match(/^(.+?)\s*\^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\s*$/);
-      if (blockMatch) {
-        if (i + 1 < linesForExistingBlocks.length) {
-          const nextLine = linesForExistingBlocks[i + 1];
-          if (nextLine.trim() !== "") {
-            linesForExistingBlocks.splice(i + 1, 0, "", "");
-            i += 2;
-          }
-        }
+      const blockMatch = linesForExistingBlocks[i].match(BLOCK_ANCHOR_REGEX);
+      if (blockMatch && i + 1 < linesForExistingBlocks.length && linesForExistingBlocks[i + 1].trim() !== "") {
+        linesForExistingBlocks.splice(i + 1, 0, "", "");
+        i += 2;
       }
     }
     newContent = linesForExistingBlocks.join("\n");
-    newContent = newContent.replace(
-      /([ \t]*)- DONE (.+?)\s*\n([ \t]*:LOGBOOK:\s*\n((?:[ \t]*CLOCK: \[.*?\]--\[.*?\] =>\s*\d{2}:\d{2}:\d{2}\s*\n)+)[ \t]*:END:)/gms,
-      (_match, indent, taskText, _logbook, clockBlock) => {
-        var _a2;
-        const times = (_a2 = clockBlock.match(/=> *(\d{2}:\d{2}:\d{2})/g)) != null ? _a2 : [];
-        const totalSeconds = times.reduce((sum, t) => sum + timeStrToSeconds(t.replace(/=> */g, "")), 0);
-        const durationStr = formatDuration(totalSeconds);
-        return `${indent}- DONE ${taskText.trim()} ${durationStr}`;
-      }
-    );
+    newContent = convertLogbook(newContent);
     if (this.settings.todoRenderMode === "convert-to-checkbox") {
-      newContent = newContent.replace(/([ \t]*)- TODO\b/gm, "$1- [ ]");
-      newContent = newContent.replace(/([ \t]*)- DOING\b/gm, "$1- [ ]");
-      newContent = newContent.replace(/([ \t]*)- DONE\b(.*)/gm, "$1- [x]$2");
+      newContent = convertTodosToCheckboxes(newContent);
     }
     if (newContent !== content) {
       await this.app.vault.modify(file, newContent);
@@ -379,31 +367,29 @@ var LogseqFormater = class extends import_obsidian.Plugin {
     if (this.settings.todoRenderMode !== "render-as-task") {
       return;
     }
-    const taskItems = element.querySelectorAll("li");
-    taskItems.forEach((item) => {
+    element.querySelectorAll("li").forEach((item) => {
       if (item.closest("pre, code") || item.classList.contains("logseq-formater-task")) {
         return;
       }
       const text = item.textContent || "";
-      const match = text.match(/^\s*(TODO|DOING|DONE)\s+(.*)$/is);
+      const match = text.match(TODO_STATUS_REGEX);
       if (!match) {
         return;
       }
       const status = match[1].toUpperCase();
-      const statusPattern = new RegExp(`^\\s*${status}\\s+`, "i");
+      const prefixPattern = new RegExp(`^\\s*${status}\\s+`, "i");
       const originalChildren = Array.from(item.childNodes);
       item.empty();
-      item.addClass("logseq-formater-task");
-      item.addClass(`logseq-formater-task-${status.toLowerCase()}`);
+      item.addClass("logseq-formater-task", `logseq-formater-task-${status.toLowerCase()}`);
       const checkbox = item.createEl("input", {
         type: "checkbox",
         cls: "logseq-formater-task-checkbox task-list-item-checkbox"
       });
       checkbox.checked = status === "DONE";
       checkbox.disabled = true;
-      if (status !== "TODO" && status !== "DONE") {
+      if (status === "DOING") {
         item.createEl("span", {
-          cls: `logseq-formater-task-status logseq-formater-status-${status.toLowerCase()}`,
+          cls: "logseq-formater-task-status logseq-formater-status-doing",
           text: status
         });
       }
@@ -412,7 +398,7 @@ var LogseqFormater = class extends import_obsidian.Plugin {
       originalChildren.forEach((child) => {
         if (!prefixRemoved && child.nodeType === Node.TEXT_NODE) {
           const childText = child.textContent || "";
-          const remaining = childText.replace(statusPattern, "");
+          const remaining = childText.replace(prefixPattern, "");
           if (remaining !== childText) {
             prefixRemoved = true;
             if (remaining) {
