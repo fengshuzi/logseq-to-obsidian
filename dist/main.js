@@ -426,7 +426,12 @@ var LogseqFormaterSettingTab = class extends import_obsidian.PluginSettingTab {
     const donateSection = containerEl.createDiv({ cls: "plugin-donate-section" });
     donateSection.createEl("p", { text: "If this plugin helped you, consider buying me a coffee \u2615", cls: "plugin-donate-desc" });
     const imgWrap = donateSection.createDiv({ cls: "plugin-donate-qr" });
-    imgWrap.createEl("img", { attr: { src: "https://raw.githubusercontent.com/fengshuzi/images/main/wechat-donate.jpg", alt: "\u5FAE\u4FE1\u6253\u8D4F", width: "160" } });
+    const donateImg = imgWrap.createEl("img", { attr: { src: "https://raw.githubusercontent.com/fengshuzi/images/main/wechat-donate.jpg", alt: "\u5FAE\u4FE1\u6253\u8D4F" }, cls: "plugin-donate-img" });
+    donateImg.addEventListener("click", () => {
+      const overlay = document.body.createDiv({ cls: "plugin-donate-lightbox" });
+      overlay.createEl("img", { attr: { src: "https://raw.githubusercontent.com/fengshuzi/images/main/wechat-donate.jpg", alt: "\u5FAE\u4FE1\u6253\u8D4F" }, cls: "plugin-donate-lightbox-img" });
+      overlay.addEventListener("click", () => overlay.remove());
+    });
     imgWrap.createEl("p", { text: "\u5FAE\u4FE1\u626B\u7801", cls: "plugin-donate-label" });
   }
 };
