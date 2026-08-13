@@ -56,13 +56,7 @@ Both `manifest.json` and `package.json` carry `version`. **Keep them in sync.** 
 
 ## Deploy (`deploy.mjs`)
 
-**Maintainer-personal script.** `BASE_PATH` is hardcoded to the author's iCloud Obsidian vault:
-
-```
-~/Library/Mobile Documents/iCloud~md~obsidian/Documents/漂泊者及其影子
-```
-
-It fans out to 6 sibling vault directories (`.obsidian-mobile`, `.obsidian-pro`, `.obsidian-ipad`, `.obsidian-2017`, `.obsidian-zhang`, plus a separate `note-demo` vault) and also deletes a legacy `logseq-to-obsidian` sibling. **Do not run this script on another machine** — edit `BASE_PATH` and the `VAULTS` list first. It also wipes `dist/` at the end (relies on `npm run build` having just run). After deploy, Obsidian must be reloaded (the script prints the command).
+**Maintainer-personal script.** `BASE_PATH` is hardcoded to the author's iCloud Obsidian vault. It fans out to multiple sibling vault directories and also deletes a legacy plugin sibling. **Do not run this script on another machine** — edit `BASE_PATH` and the `VAULTS` list first. It also wipes `dist/` at the end (relies on `npm run build` having just run). After deploy, Obsidian must be reloaded (the script prints the command).
 
 ## Release (`release.mjs`)
 
