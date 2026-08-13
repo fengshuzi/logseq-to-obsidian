@@ -77,8 +77,10 @@ It fans out to 6 sibling vault directories (`.obsidian-mobile`, `.obsidian-pro`,
 No test framework, no test files, no CI workflows (no `.github/`). Verification is `npm run lint` + manual load in Obsidian. Do not introduce a test runner unless asked — it is not part of the project's existing tooling.
 
 ## Conventions
-
 - Single-file source. Keep `main.ts` growing along its current sections (settings, CodeMirror extension, block-ref rendering, `convertSyntax`, `renderTodosAsTasks`, setting tab). New plugins typically warrant a new repo, not new files here.
 - No comments in source (project-wide style). Do not add explanatory comments to `main.ts`.
 - Logging convention: `console.debug('[LogseqFormater] ...')` is used heavily in `main.ts`; match this prefix and level for new log lines.
 - The plugin operates on `md` files via the `file-open` event — anything time-consuming in `convertSyntax` runs on every MD open. Keep that path cheap.
+
+## Marketplace / Scorecard
+Marketplace, manifest, and release conventions (author fields, description punctuation, `minAppVersion`, `versions.json`, Scorecard workflow) live in the parent `obsidian-plugins-parent/AGENTS.md`. Read it before touching `manifest.json`, release flow, or marketplace-facing code.
